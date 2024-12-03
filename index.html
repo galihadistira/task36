@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Pagination</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Tambahkan style untuk tabel dan tombol pagination */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        form {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        table th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .pagination {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .pagination button {
+            margin: 0 5px;
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        .pagination button.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .pagination button:hover {
+            background-color: #ddd;
+        }
+
+        .pagination button:disabled {
+            background-color: #f1f1f1;
+            color: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h2>Student Registration</h2>
+    <form id="studentForm">
+        <label for="nik">Masukkan NIK:</label>
+        <input type="text" id="nik" name="nik" required>
+        <br><br>
+        <label for="nama">Masukkan Nama:</label>
+        <input type="text" id="nama" name="nama" required>
+        <br><br>
+        <button type="submit">Simpan</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>NIK</th>
+                <th>Nama</th>
+            </tr>
+        </thead>
+        <tbody id="studentTable">
+            <!-- Data akan dimuat di sini -->
+        </tbody>
+    </table>
+
+    <div class="pagination" id="pagination">
+        <!-- Tombol pagination akan dimuat di sini -->
+    </div>
+
+    <script>
+        // Fungsi untuk memuat data mahasiswa
+        const loadStudents = (page = 1) => {
+            fetch(`get_students.php?page=${page}`)
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.getElementById('studentTable');
+                    const pagination = document.getElementById('pagination');
+
+                    // Reset tabel dan pagination
+                    tableBody.innerHTML = '';
+                    pagination.innerHTML = '';
+
+                    // Tampilkan data di tabel
+                    data.students.forEach((student, index) => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${(page - 1) * 3 + index + 1}</td>
+                            <td>${student.nik}</td>
+                            <td>${student.nama}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+
+                    // Tampilkan tombol pagination
+                    if (data.currentPage > 1) {
+                        const prevButton = document.createElement('button');
+                        prevButton.textContent = 'Previous';
+                        prevButton.onclick = () => loadStudents(data.currentPage - 1);
+                        pagination.appendChild(prevButton);
+                    }
+
+                    for (let i = 1; i <= data.totalPages; i++) {
+                        const button = document.createElement('button');
+                        button.textContent = i;
+                        if (i === data.currentPage) {
+                            button.classList.add('active');
+                            button.disabled = true;
+                        }
+                        button.onclick = () => loadStudents(i);
+                        pagination.appendChild(button);
+                    }
+
+                    if (data.currentPage < data.totalPages) {
+                        const nextButton = document.createElement('button');
+                        nextButton.textContent = 'Next';
+                        nextButton.onclick = () => loadStudents(data.currentPage + 1);
+                        pagination.appendChild(nextButton);
+                    }
+                });
+        };
+
+        // Event listener untuk form submit
+        document.getElementById('studentForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+
+            fetch('add_student.php', {
+                method: 'POST',
+                body: formData
+            }).then(response => response.text())
+              .then(data => {
+                  alert(data);
+                  loadStudents();
+                  this.reset();
+              });
+        });
+
+        // Load data awal
+        loadStudents();
+    </script>
+</body>
+</html>
